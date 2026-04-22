@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Budgetspiegel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #151820;
+    --surface2: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8eaf0;
+    --muted: rgba(232,234,240,0.45);
+    --accent: #c8f060;
+    --accent2: #60c8f0;
+    --warn: #f0b060;
+    --danger: #f06060;
+    --green: #60f0a0;
+    --fun: #d060f0;
+    --invest: #60c8f0;
+    --fixed: #f0b060;
+    --boodschappen: #60f0a0;
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(200,240,96,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  .nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: rgba(21,24,32,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 0 10px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: color 0.2s;
+    text-transform: uppercase;
+  }
+  .nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; transition: all 0.2s; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn.active svg { stroke: var(--accent); }
+
+  /* PAGES */
+  .page { display: none; padding: 24px 20px 100px; animation: fadeUp 0.3s ease; }
+  .page.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TYPOGRAPHY */
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  /* HERO CARD */
+  .hero {
+    background: linear-gradient(135deg, #1c2030 0%, #151820 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(200,240,96,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .hero-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .hero-amount.positive { color: var(--accent); }
+  .hero-amount.negative { color: var(--danger); }
+  .hero-meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .hero-meta span { color: var(--text); font-weight: 500; }
+
+  .hero-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .hero-mini {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+  }
+  .hero-mini-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .hero-mini-val { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; }
+  .hero-mini-val.green { color: var(--green); }
+  .hero-mini-val.red { color: var(--danger); }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  /* CATEGORY ROWS */
+  .cat-row { margin-bottom: 16px; }
+  .cat-row:last-child { margin-bottom: 0; }
+  .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .cat-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+  .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cat-dot.fun { background: var(--fun); }
+  .cat-dot.invest { background: var(--invest); }
+  .cat-dot.fixed { background: var(--fixed); }
+  .cat-dot.boodschappen { background: var(--boodschappen); }
+  .cat-amounts { text-align: right; }
+  .cat-spent { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+  .cat-budget { font-size: 11px; color: var(--muted); }
+
+  .progress-track { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .progress-fill.fun { background: var(--fun); }
+  .progress-fill.invest { background: var(--invest); }
+  .progress-fill.fixed { background: var(--fixed); }
+  .progress-fill.boodschappen { background: var(--boodschappen); }
+  .progress-fill.over { background: var(--danger); }
+
+  .cat-pct { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .cat-warn { font-size: 11px; color: var(--warn); margin-top: 4px; }
+  .cat-over { font-size: 11px; color: var(--danger); margin-top: 4px; }
+
+  /* ADD EXPENSE */
+  .add-btn-fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(200,240,96,0.35);
+    z-index: 99;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .add-btn-fab:active { transform: scale(0.93); }
+  .add-btn-fab svg { width: 26px; height: 26px; stroke: #0d0f14; stroke-width: 2.5; fill: none; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; animation: overlayIn 0.25s ease; }
+  @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    width: 100%;
+    max-width: 430px;
+    background: var(--surface);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 28px 24px;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 24px; }
+  .modal-handle {
+    width: 36px; height: 4px; background: var(--border);
+    border-radius: 99px; margin: 0 auto 20px;
+  }
+
+  /* INPUT */
+  .input-group { margin-bottom: 16px; }
+  .input-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+  .input-field {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: var(--accent); }
+  .input-field.normal { font-family: 'DM Sans', sans-serif; font-size: 16px; }
+
+  /* CAT PICKER */
+  .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cat-pick {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .cat-pick:active { transform: scale(0.97); }
+  .cat-pick.selected.fun { border-color: var(--fun); background: rgba(208,96,240,0.12); }
+  .cat-pick.selected.invest { border-color: var(--invest); background: rgba(96,200,240,0.12); }
+  .cat-pick.selected.fixed { border-color: var(--fixed); background: rgba(240,176,96,0.12); }
+  .cat-pick.selected.boodschappen { border-color: var(--boodschappen); background: rgba(96,240,160,0.12); }
+  .cat-pick-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* BUTTONS */
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    margin-top: 8px;
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; }
+
+  .btn-ghost {
+    width: 100%;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* SETTINGS */
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-key { font-size: 14px; font-weight: 500; }
+  .settings-val { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--accent); }
+
+  .input-settings {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    outline: none;
+    width: 120px;
+    text-align: right;
+    transition: border-color 0.2s;
+  }
+  .input-settings:focus { border-color: var(--accent); }
+
+  .pct-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    margin-top: 12px;
+    margin-bottom: 16px;
+  }
+  .pct-total-label { font-size: 13px; color: var(--muted); }
+  .pct-total-val { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; }
+  .pct-total-val.valid { color: var(--green); }
+  .pct-total-val.invalid { color: var(--danger); }
+
+  /* HISTORY */
+  .hist-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-month { font-size: 13px; font-weight: 500; }
+  .hist-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .hist-result { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; }
+  .hist-result.pos { color: var(--green); }
+  .hist-result.neg { color: var(--danger); }
+
+  /* EXPENSE LIST */
+  .exp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .exp-row:last-child { border-bottom: none; }
+  .exp-cat-badge {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .exp-cat-badge.fun { background: rgba(208,96,240,0.15); }
+  .exp-cat-badge.invest { background: rgba(96,200,240,0.15); }
+  .exp-cat-badge.fixed { background: rgba(240,176,96,0.15); }
+  .exp-cat-badge.boodschappen { background: rgba(96,240,160,0.15); }
+  .exp-info { flex: 1; padding: 0 12px; }
+  .exp-catname { font-size: 13px; font-weight: 500; text-transform: capitalize; }
+  .exp-date { font-size: 11px; color: var(--muted); }
+  .exp-amount { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; color: var(--danger); }
+
+  .exp-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  /* DAYBUDGET */
+  .daybudget-hero {
+    background: linear-gradient(135deg, rgba(200,240,96,0.08) 0%, transparent 100%);
+    border: 1px solid rgba(200,240,96,0.2);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .daybudget-num { font-family: 'Syne', sans-serif; font-size: 42px; font-weight: 800; color: var(--accent); letter-spacing: -2px; }
+  .daybudget-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* FORECAST */
+  .forecast-bar {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 99px;
+    margin: 12px 0;
+    overflow: hidden;
+    position: relative;
+  }
+  .forecast-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s ease;
+  }
+
+  /* ALERT */
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .alert.show { display: block; }
+  .alert.warn { background: rgba(240,176,96,0.12); border: 1px solid rgba(240,176,96,0.3); color: var(--warn); }
+  .alert.danger { background: rgba(240,96,96,0.12); border: 1px solid rgba(240,96,96,0.3); color: var(--danger); }
+  .alert.success { background: rgba(96,240,160,0.12); border: 1px solid rgba(96,240,160,0.3); color: var(--green); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 12px 24px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 999;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+  /* SETUP SCREEN */
+  .setup-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 300;
+    padding: 40px 24px;
+    overflow-y: auto;
+  }
+  .setup-screen.show { display: block; }
+  .setup-logo { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+  .setup-tagline { color: var(--muted); font-size: 15px; margin-bottom: 40px; }
+
+  .month-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(200,240,96,0.1);
+    border: 1px solid rgba(200,240,96,0.2);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 20px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-logo">Budgetspiegel</div>
+  <div class="setup-tagline">Stel je maandbudget in om te beginnen.</div>
+
+  <div class="section-label">Maandinkomen</div>
+  <div class="input-group">
+    <input class="input-field" type="number" id="setupIncome" placeholder="3500" inputmode="numeric">
+  </div>
+
+  <div class="section-label" style="margin-top:24px;">Verdeling (%)</div>
+  <div class="card" style="margin-bottom:0;">
+    <div class="settings-row">
+      <div>
+        <div class="settings-key">🏠 Vaste lasten</div>
+        <div style="font-size:11px;color:var(--muted)">Huur, abbo's, verzekering</div>
+      </div>
+      <input class="input-settings" type="number" id="setupFixed" value="50" min="0" max="100">
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-key">📈 Investeringen</div>
+        <div style="font-size:11px;color:var(--muted)">Sparen, aandelen</div>
+      </div>
+      <input class="input-settings" type="number" id="setupInvest" value="20" min="0" max="100">
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-key">🎉 Fun</div>
+        <div style="font-size:11px;color:var(--muted)">Vrij te besteden</div>
+      </div>
+      <input class="input-settings" type="number" id="setupFun" value="20" min="0" max="100">
+    </div>
+    <div class="settings-row" style="border:none;">
+      <div>
+        <div class="settings-key">🛒 Boodschappen</div>
+        <div style="font-size:11px;color:var(--muted)">Eten & drinken</div>
+      </div>
+      <input class="input-settings" type="number" id="setupBood" value="10" min="0" max="100">
+    </div>
+  </div>
+
+  <div class="pct-total">
+    <span class="pct-total-label">Totaal percentage</span>
+    <span class="pct-total-val" id="setupPctTotal">100%</span>
+  </div>
+
+  <button class="btn-primary" id="setupSaveBtn" onclick="saveSetup()">Begin met tracken →</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;">
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="pageHome">
+    <div class="month-pill" id="homePill">● April 2026</div>
+    <div class="page-title" id="homeGreeting">Hoe sta je ervoor?</div>
+    <div class="page-sub" id="homeDate"></div>
+
+    <div class="hero" id="heroCard">
+      <div class="hero-label">Vrij besteedbaar</div>
+      <div class="hero-amount positive" id="heroAmount">€0</div>
+      <div class="hero-meta" id="heroMeta">Van <span id="heroIncome">€0</span> totaal</div>
+    </div>
+
+    <div class="hero-row">
+      <div class="hero-mini">
+        <div class="hero-mini-label">Uitgegeven</div>
+        <div class="hero-mini-val red" id="miniSpent">€0</div>
+      </div>
+      <div class="hero-mini">
+        <div class="hero-mini-label">Dagbudget</div>
+        <div class="hero-mini-val green" id="miniDay">€0</div>
+      </div>
+    </div>
+
+    <div id="alerts"></div>
+
+    <div class="card">
+      <div class="card-title">Budget per categorie</div>
+      <div id="catRows"></div>
+    </div>
+
+    <div class="card" id="forecastCard">
+      <div class="card-title">Voorspelling einde maand</div>
+      <div id="forecastContent"></div>
+    </div>
+  </div>
+
+  <!-- ADD PAGE -->
+  <div class="page" id="pageAdd">
+    <div class="page-title">Uitgave toevoegen</div>
+    <div class="page-sub">Snel opslaan in 3 stappen</div>
+
+    <div class="input-group">
+      <div class="input-label">Bedrag (€)</div>
+      <input class="input-field" type="number" id="addAmount" placeholder="0" inputmode="decimal" step="0.01">
+    </div>
+
+    <div class="input-group">
+      <div class="input-label">Categorie</div>
+      <div class="cat-grid" id="catPicker">
+        <button class="cat-pick fun" data-cat="fun" onclick="selectCat(this)">
+          <div class="cat-pick-dot" style="background:var(--fun)"></div> 🎉 Fun
+        </button>
+        <button class="cat-pick invest" data-cat="invest" onclick="selectCat(this)">
+          <div class="cat-pick-dot" style="background:var(--invest)"></div> 📈 Invest
+        </button>
+        <button class="cat-pick fixed" data-cat="fixed" onclick="selectCat(this)">
+          <div class="cat-pick-dot" style="background:var(--fixed)"></div> 🏠 Vast
+        </button>
+        <button class="cat-pick boodschappen" data-cat="boodschappen" onclick="selectCat(this)">
+          <div class="cat-pick-dot" style="background:var(--boodschappen)"></div> 🛒 Bood.
+        </button>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-label">Notitie (optioneel)</div>
+      <input class="input-field normal" type="text" id="addNote" placeholder="Bijv. Albert Heijn">
+    </div>
+
+    <div id="addImpact" style="display:none;" class="alert warn show">
+      <strong id="addImpactText"></strong>
+    </div>
+
+    <button class="btn-primary" id="addSaveBtn" onclick="saveExpense()">Opslaan</button>
+    <button class="btn-ghost" onclick="document.getElementById('addAmount').value='';document.getElementById('addNote').value='';selectedCat=null;document.querySelectorAll('.cat-pick').forEach(b=>b.classList.remove('selected'));">Wissen</button>
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div class="page" id="pageHistory">
+    <div class="page-title">Overzicht</div>
+    <div class="page-sub">Alle vorige maanden</div>
+
+    <div class="card" id="histList">
+      <div class="empty"><div class="empty-icon">📅</div>Nog geen eerdere maanden</div>
+    </div>
+
+    <div class="card" id="currentMonthExpenses">
+      <div class="card-title">Uitgaven deze maand</div>
+      <div id="expList"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="pageSettings">
+    <div class="page-title">Instellingen</div>
+    <div class="page-sub">Pas je budget aan</div>
+
+    <div class="card">
+      <div class="card-title">Maandinkomen</div>
+      <div class="input-group" style="margin-bottom:0;">
+        <input class="input-field" type="number" id="setIncome" placeholder="3500" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Procentuele verdeling</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-key">🏠 Vaste lasten</div>
+        </div>
+        <input class="input-settings" type="number" id="setFixed" min="0" max="100">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-key">📈 Investeringen</div>
+        </div>
+        <input class="input-settings" type="number" id="setInvest" min="0" max="100">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-key">🎉 Fun</div>
+        </div>
+        <input class="input-settings" type="number" id="setFun" min="0" max="100">
+      </div>
+      <div class="settings-row" style="border:none;">
+        <div>
+          <div class="settings-key">🛒 Boodschappen</div>
+        </div>
+        <input class="input-settings" type="number" id="setBood" min="0" max="100">
+      </div>
+
+      <div class="pct-total">
+        <span class="pct-total-label">Totaal</span>
+        <span class="pct-total-val" id="setPctTotal">100%</span>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveSettings()">Opslaan</button>
+
+    <div style="margin-top:24px;" class="card">
+      <div class="card-title">Data</div>
+      <div class="settings-row" style="border:none;">
+        <div class="settings-key" style="color:var(--danger);">Alles wissen</div>
+        <button onclick="clearData()" style="background:rgba(240,96,96,0.1);border:1px solid rgba(240,96,96,0.3);color:var(--danger);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;">Reset</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FAB -->
+<button class="add-btn-fab" id="fabBtn" onclick="goToAdd()" title="Uitgave toevoegen">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+</button>
+
+<!-- NAV -->
+<nav class="nav" id="mainNav">
+  <button class="nav-btn active" onclick="navigate('home', this)">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Home
+  </button>
+  <button class="nav-btn" onclick="navigate('add', this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg>
+    Toevoegen
+  </button>
+  <button class="nav-btn" onclick="navigate('history', this)">
+    <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3M3.05 11A9 9 0 1012 3"/><polyline points="3 2 3 6 7 6"/></svg>
+    Historie
+  </button>
+  <button class="nav-btn" onclick="navigate('settings', this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Instellingen
+  </button>
+</nav>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {
+  settings: { income: 0, percentages: { fixed: 50, invest: 20, fun: 20, boodschappen: 10 } },
+  months: {}
+};
+let selectedCat = null;
+
+const CATS = {
+  fun: { label: 'Fun', emoji: '🎉', color: 'var(--fun)' },
+  invest: { label: 'Investering', emoji: '📈', color: 'var(--invest)' },
+  fixed: { label: 'Vaste lasten', emoji: '🏠', color: 'var(--fixed)' },
+  boodschappen: { label: 'Boodschappen', emoji: '🛒', color: 'var(--boodschappen)' }
+};
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+function save() { localStorage.setItem('budgetspiegel', JSON.stringify(state)); }
+function load() {
+  const d = localStorage.getItem('budgetspiegel');
+  if (d) state = JSON.parse(d);
+}
+
+function currentMonth() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+}
+
+function ensureMonth(m) {
+  if (!state.months[m]) {
+    state.months[m] = { income: state.settings.income, expenses: [] };
+    save();
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  load();
+  if (!state.settings.income) {
+    document.getElementById('setupScreen').classList.add('show');
+    bindSetupListeners();
+    return;
+  }
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('fabBtn').style.display = 'flex';
+  document.getElementById('mainNav').style.display = 'flex';
+  ensureMonth(currentMonth());
+  renderHome();
+  renderHistory();
+  loadSettings();
+}
+
+// ─── SETUP ────────────────────────────────────────────────────────────────────
+function bindSetupListeners() {
+  ['setupFixed','setupInvest','setupFun','setupBood'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateSetupTotal);
+  });
+}
+
+function updateSetupTotal() {
+  const t = +document.getElementById('setupFixed').value +
+            +document.getElementById('setupInvest').value +
+            +document.getElementById('setupFun').value +
+            +document.getElementById('setupBood').value;
+  const el = document.getElementById('setupPctTotal');
+  el.textContent = t + '%';
+  el.className = 'pct-total-val ' + (t === 100 ? 'valid' : 'invalid');
+  document.getElementById('setupSaveBtn').disabled = t !== 100 || !document.getElementById('setupIncome').value;
+}
+
+function saveSetup() {
+  const income = +document.getElementById('setupIncome').value;
+  const fixed = +document.getElementById('setupFixed').value;
+  const invest = +document.getElementById('setupInvest').value;
+  const fun = +document.getElementById('setupFun').value;
+  const boodschappen = +document.getElementById('setupBood').value;
+  if (!income || fixed+invest+fun+boodschappen !== 100) return;
+  state.settings = { income, percentages: { fixed, invest, fun, boodschappen } };
+  save();
+  document.getElementById('setupScreen').classList.remove('show');
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('fabBtn').style.display = 'flex';
+  document.getElementById('mainNav').style.display = 'flex';
+  ensureMonth(currentMonth());
+  renderHome();
+  renderHistory();
+  loadSettings();
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+function navigate(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page' + cap(page)).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (page === 'home') renderHome();
+  if (page === 'history') renderHistory();
+  if (page === 'settings') loadSettings();
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function goToAdd() {
+  navigate('add', document.querySelectorAll('.nav-btn')[1]);
+}
+
+// ─── HOME ─────────────────────────────────────────────────────────────────────
+function renderHome() {
+  const m = currentMonth();
+  ensureMonth(m);
+  const mData = state.months[m];
+  const { income, percentages } = state.settings;
+
+  // Budgets per cat
+  const budgets = {};
+  Object.keys(percentages).forEach(k => budgets[k] = income * percentages[k] / 100);
+
+  // Spent per cat
+  const spent = { fun: 0, invest: 0, fixed: 0, boodschappen: 0 };
+  mData.expenses.forEach(e => { if (spent[e.category] !== undefined) spent[e.category] += e.amount; });
+
+  const totalSpent = Object.values(spent).reduce((a,b)=>a+b,0);
+  const remaining = income - totalSpent;
+
+  // Pill & date
+  const now = new Date();
+  const monthNames = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+  document.getElementById('homePill').textContent = '● ' + monthNames[now.getMonth()] + ' ' + now.getFullYear();
+  document.getElementById('homeDate').textContent = 'Bijgewerkt op ' + now.toLocaleDateString('nl-NL', {weekday:'long',day:'numeric',month:'long'});
+
+  // Hero
+  const heroAmount = document.getElementById('heroAmount');
+  heroAmount.textContent = fmt(remaining);
+  heroAmount.className = 'hero-amount ' + (remaining >= 0 ? 'positive' : 'negative');
+  document.getElementById('heroIncome').textContent = fmt(income);
+  document.getElementById('heroMeta').innerHTML = `Van <span id="heroIncome">${fmt(income)}</span> budget · ${fmt(totalSpent)} uitgegeven`;
+
+  document.getElementById('miniSpent').textContent = fmt(totalSpent);
+
+  // Day budget
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const dayRemaining = now.getDate();
+  const daysLeft = daysInMonth - dayRemaining + 1;
+  const dayBudget = remaining > 0 ? remaining / daysLeft : 0;
+  document.getElementById('miniDay').textContent = fmt(dayBudget) + '/d';
+
+  // Alerts
+  const alertsEl = document.getElementById('alerts');
+  alertsEl.innerHTML = '';
+  if (remaining < 0) {
+    alertsEl.innerHTML = `<div class="alert danger show">⚠️ Je zit €${Math.abs(remaining).toFixed(0)} <strong>over budget</strong> deze maand!</div>`;
+  } else if (remaining < income * 0.1) {
+    alertsEl.innerHTML = `<div class="alert warn show">⚡ Nog maar ${fmt(remaining)} beschikbaar — bijna op!</div>`;
+  }
+
+  // Cat rows
+  const catRowsEl = document.getElementById('catRows');
+  catRowsEl.innerHTML = '';
+  Object.keys(CATS).forEach(cat => {
+    const budget = budgets[cat] || 0;
+    const s = spent[cat] || 0;
+    const pct = budget > 0 ? Math.min(s / budget * 100, 100) : 0;
+    const over = s > budget;
+    let warn = '';
+    if (over) {
+      warn = `<div class="cat-over">+${fmt(s - budget)} over budget → impact op totaal</div>`;
+    } else if (pct >= 75) {
+      warn = `<div class="cat-warn">⚡ ${Math.round(pct)}% van budget gebruikt</div>`;
+    }
+    catRowsEl.innerHTML += `
+      <div class="cat-row">
+        <div class="cat-header">
+          <div class="cat-name"><span class="cat-dot ${cat}"></span>${CATS[cat].emoji} ${CATS[cat].label}</div>
+          <div class="cat-amounts">
+            <div class="cat-spent" style="color:${over?'var(--danger)':''}">${fmt(s)}</div>
+            <div class="cat-budget">van ${fmt(budget)}</div>
+          </div>
+        </div>
+        <div class="progress-track"><div class="progress-fill ${over?'over':cat}" style="width:${pct}%"></div></div>
+        <div class="cat-pct">${Math.round(pct)}% gebruikt</div>
+        ${warn}
+      </div>`;
+  });
+
+  // Forecast
+  const daysElapsed = dayRemaining;
+  const burnRate = totalSpent / daysElapsed;
+  const projected = burnRate * daysInMonth;
+  const result = income - projected;
+  const fEl = document.getElementById('forecastContent');
+  const projPct = Math.min(projected / income * 100, 120);
+  fEl.innerHTML = `
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Op dit tempo eindig je op:</div>
+    <div style="font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:${result>=0?'var(--green)':'var(--danger)'};">${fmt(result)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Verwachte uitgaven: ${fmt(projected)}</div>
+    <div class="forecast-bar"><div class="forecast-fill" style="width:${projPct}%;background:${result>=0?'var(--green)':'var(--danger)'}"></div></div>
+    <div style="font-size:11px;color:var(--muted);">Dag ${daysElapsed} van ${daysInMonth} · Burn rate ${fmt(burnRate)}/dag</div>
+  `;
+}
+
+// ─── ADD EXPENSE ──────────────────────────────────────────────────────────────
+function selectCat(btn) {
+  document.querySelectorAll('.cat-pick').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedCat = btn.dataset.cat;
+  previewImpact();
+}
+
+function previewImpact() {
+  const amount = +document.getElementById('addAmount').value;
+  const el = document.getElementById('addImpact');
+  const txt = document.getElementById('addImpactText');
+  if (!amount || !selectedCat) { el.style.display = 'none'; return; }
+  const m = currentMonth();
+  const mData = state.months[m] || { expenses: [] };
+  const { income, percentages } = state.settings;
+  const budget = income * (percentages[selectedCat] || 0) / 100;
+  const spent = mData.expenses.filter(e=>e.category===selectedCat).reduce((a,e)=>a+e.amount,0);
+  const after = spent + amount;
+  const remaining = budget - after;
+  el.style.display = 'block';
+  if (remaining < 0) {
+    el.className = 'alert danger show';
+    txt.textContent = `⚠️ ${fmt(Math.abs(remaining))} over budget na deze uitgave`;
+  } else {
+    el.className = 'alert warn show';
+    txt.textContent = `Resterend in ${CATS[selectedCat].label}: ${fmt(remaining)}`;
+  }
+}
+
+document.getElementById('addAmount').addEventListener('input', previewImpact);
+
+function saveExpense() {
+  const amount = +document.getElementById('addAmount').value;
+  const note = document.getElementById('addNote').value.trim();
+  if (!amount || amount <= 0) { showToast('Vul een bedrag in', 'error'); return; }
+  if (!selectedCat) { showToast('Kies een categorie', 'error'); return; }
+
+  const m = currentMonth();
+  ensureMonth(m);
+  state.months[m].expenses.push({
+    amount,
+    category: selectedCat,
+    note,
+    date: new Date().toISOString()
+  });
+  save();
+
+  // Reset
+  document.getElementById('addAmount').value = '';
+  document.getElementById('addNote').value = '';
+  document.getElementById('addImpact').style.display = 'none';
+  document.querySelectorAll('.cat-pick').forEach(b => b.classList.remove('selected'));
+  selectedCat = null;
+
+  showToast(`${fmt(amount)} opgeslagen ✓`, 'success');
+  renderHome();
+  navigate('home', document.querySelectorAll('.nav-btn')[0]);
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const m = currentMonth();
+  const months = Object.keys(state.months).sort().reverse();
+  const histList = document.getElementById('histList');
+  const prev = months.filter(k => k !== m);
+
+  if (prev.length === 0) {
+    histList.innerHTML = '<div class="empty"><div class="empty-icon">📅</div>Nog geen vorige maanden</div>';
+  } else {
+    histList.innerHTML = '<div class="card-title">Vorige maanden</div>';
+    prev.forEach(mk => {
+      const md = state.months[mk];
+      const totalSpent = md.expenses.reduce((a,e)=>a+e.amount, 0);
+      const result = md.income - totalSpent;
+      const [yr, mo] = mk.split('-');
+      const monthNames = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+      const label = monthNames[+mo-1] + ' ' + yr;
+      histList.innerHTML += `
+        <div class="hist-row">
+          <div>
+            <div class="hist-month">${label}</div>
+            <div class="hist-detail">Inkomen ${fmt(md.income)} · Uitgegeven ${fmt(totalSpent)}</div>
+          </div>
+          <div class="hist-result ${result>=0?'pos':'neg'}">${result>=0?'+':''}${fmt(result)}</div>
+        </div>`;
+    });
+  }
+
+  // Current month expenses
+  const expList = document.getElementById('expList');
+  const mData = state.months[m] || { expenses: [] };
+  if (mData.expenses.length === 0) {
+    expList.innerHTML = '<div class="empty"><div class="empty-icon">💸</div>Nog geen uitgaven deze maand</div>';
+  } else {
+    expList.innerHTML = '';
+    [...mData.expenses].reverse().forEach((e, i) => {
+      const idx = mData.expenses.length - 1 - i;
+      const d = new Date(e.date);
+      const dateStr = d.toLocaleDateString('nl-NL', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      expList.innerHTML += `
+        <div class="exp-row">
+          <div class="exp-cat-badge ${e.category}">${CATS[e.category]?.emoji||'💰'}</div>
+          <div class="exp-info">
+            <div class="exp-catname">${e.note || CATS[e.category]?.label || e.category}</div>
+            <div class="exp-date">${dateStr}</div>
+          </div>
+          <div class="exp-amount">-${fmt(e.amount)}</div>
+          <button class="exp-del" onclick="deleteExpense(${idx})">×</button>
+        </div>`;
+    });
+  }
+}
+
+function deleteExpense(idx) {
+  const m = currentMonth();
+  state.months[m].expenses.splice(idx, 1);
+  save();
+  renderHistory();
+  renderHome();
+  showToast('Uitgave verwijderd', 'success');
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+function loadSettings() {
+  const { income, percentages } = state.settings;
+  document.getElementById('setIncome').value = income;
+  document.getElementById('setFixed').value = percentages.fixed;
+  document.getElementById('setInvest').value = percentages.invest;
+  document.getElementById('setFun').value = percentages.fun;
+  document.getElementById('setBood').value = percentages.boodschappen;
+  updateSetTotal();
+}
+
+function updateSetTotal() {
+  const t = +document.getElementById('setFixed').value +
+            +document.getElementById('setInvest').value +
+            +document.getElementById('setFun').value +
+            +document.getElementById('setBood').value;
+  const el = document.getElementById('setPctTotal');
+  el.textContent = t + '%';
+  el.className = 'pct-total-val ' + (t === 100 ? 'valid' : 'invalid');
+}
+
+['setFixed','setInvest','setFun','setBood'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateSetTotal);
+});
+
+function saveSettings() {
+  const income = +document.getElementById('setIncome').value;
+  const fixed = +document.getElementById('setFixed').value;
+  const invest = +document.getElementById('setInvest').value;
+  const fun = +document.getElementById('setFun').value;
+  const boodschappen = +document.getElementById('setBood').value;
+  if (fixed+invest+fun+boodschappen !== 100) { showToast('Percentages moeten 100% zijn', 'error'); return; }
+  if (!income) { showToast('Vul een inkomen in', 'error'); return; }
+  state.settings = { income, percentages: { fixed, invest, fun, boodschappen } };
+  const m = currentMonth();
+  if (state.months[m]) state.months[m].income = income;
+  save();
+  showToast('Instellingen opgeslagen ✓', 'success');
+  renderHome();
+}
+
+function clearData() {
+  if (!confirm('Weet je zeker dat je alle data wilt wissen?')) return;
+  localStorage.removeItem('budgetspiegel');
+  location.reload();
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return '€' + Math.abs(n).toLocaleString('nl-NL', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+
+function showToast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type + ' show';
+  setTimeout(() => el.className = 'toast', 2500);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
